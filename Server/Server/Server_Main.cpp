@@ -11,11 +11,10 @@ int main() {
 	singleton.InitServer();
 
 	while (true) {
-		
-		if (!singleton.AcceptNewClient()) {
+		int client_pos = singleton.AcceptNewClient();
+		if (client_pos < 0) {
 			return 1;
 		}
-		singleton.InteractWclient();
+		singleton.InteractWclient(client_pos);
 	}
-
 }
