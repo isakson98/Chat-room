@@ -1,0 +1,8 @@
+/Server/Debug/
+/Server/Server/Debug/
+*.vcxproj
+*.filters
+*.user
+*.sln
+/.vs/
+/Server/.vs/
