@@ -1,6 +1,12 @@
 #pragma once
 #include "stdafx.h"
 
+#define MESSAGE_AUTHENTICATE 0
+#define MESSAGE_RECIEVE 1
+#define MESSAGE_CONFIRM 2
+#define MESSAGE_DENY 3
+#define MESSAGE_ERROR 4
+
 class Client {
 public:
 
@@ -8,7 +14,7 @@ public:
 	~Client();
 
 private:
-	struct m_Message {
+	struct Message {
 		string username;
 		int type;
 		int length;
@@ -17,22 +23,25 @@ private:
 
 	void InItClient();
 
-	void Connect();
+	string AskForIP();
 
 	SOCKET EstablishTCPConn(string p_host, string p_service);
 
-	void Authenticate();
-
 	void StartUp();
+
+	void AskForCredentials();
+
+	bool Authenticate(string p_username, string p_password);
+
+	void SendMsg(SOCKET p_conn, Message p_message);
+	Message RecieveMsg(SOCKET p_conn);
+	string ConvertToMsg(Message p_message);
+	Message ParseMsg(string p_message);
 
 	void LaunchDisplay();
 
-	void Sendmsg(SOCKET p_conn);
-
-	void RecieveMsg(SOCKET p_conn);
-
-	m_Message ParseMsg(const char* p_message);
-
+	string m_username;
+	string m_password;
 	string m_host;
 	const string m_chatService = "42069";
 	const string m_displayService = "42070";
