@@ -1,7 +1,7 @@
 #include "Client.h"
 
 Client::Client() {
-    cout << "Hello! Welcome to the ChatRoom Client." << endl;
+    /*cout << "Hello! Welcome to the ChatRoom Client." << endl;
     Sleep(2000);
     cout << "Before chatting begins, we need a few things from you." << endl << endl;
     Sleep(2000);
@@ -18,7 +18,7 @@ Client::Client() {
 
     m_chatConn = EstablishTCPConn(m_host, m_chatService);
 
-    StartUp();
+    StartUp();*/
 }
 
 void Client::InItClient() {
@@ -81,29 +81,19 @@ string Client::AskForIP() {
 }
 
 SOCKET Client::EstablishTCPConn(string p_host, string p_service) {
-    struct hostent* he;
-    struct servent* se;
     struct sockaddr_in sin;
     SOCKET s;
 
     memset((char*)&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
 
-    if ((se = getservbyname(p_service.c_str(), "tcp")) != NULL)
-    {
-        sin.sin_port = se->s_port;
-    }
-    else
+    if ((sin.sin_port = htons((short int)atoi(p_service.c_str())))== 0)
     {
         cerr << "Can't get the port number of the service." << endl;
         exit(EXIT_FAILURE);
     }
 
-    if ((he = gethostbyname(p_host.c_str())) != NULL)
-    {
-        memcpy((char*)&sin.sin_addr, he->h_addr, he->h_length);
-    }
-    else
+    if ((sin.sin_addr.s_addr = inet_addr(p_host.c_str())) == INADDR_NONE)
     {
         cerr << ("Invalid host address") << endl;
         exit(EXIT_FAILURE);
@@ -131,7 +121,7 @@ void Client::StartUp() {
 
     m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 
-
+    LaunchDisplay();
 }
 
 void Client::AskForCredentials() {
@@ -148,7 +138,7 @@ void Client::AskForCredentials() {
             break;
         }
         else {
-            cerr << "Username exceeded max length. Try again: ";
+            cerr << "Username empty or exceeded max length. Try again: ";
         }
     }
 
@@ -163,7 +153,7 @@ void Client::AskForCredentials() {
             break;
         }
         else {
-            cerr << "Password exceeded max length. Try again: ";
+            cerr << "Password empty or exceeded max length. Try again: ";
         }
     }
 
@@ -172,7 +162,7 @@ void Client::AskForCredentials() {
 
 bool Client::Authenticate(string p_username, string p_password) {
     Message login;
-    login.username = m_username + "\0";
+    login.username = m_username + '\0';
     login.type = 0;
     login.length = m_password.size();
     login.content = m_password;
@@ -191,11 +181,72 @@ bool Client::Authenticate(string p_username, string p_password) {
 }
 
 void Client::SendMsg(SOCKET p_conn, Message p_message) {
-
+    if (send(p_conn, ConvertToMsg(p_message).c_str(), p_message.length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
+        cerr << "Send returned an error with error code: " << WSAGetLastError() << endl;
+        closesocket(p_conn);
+        exit(EXIT_FAILURE);
+    }
 }
 
 Client::Message Client::RecieveMsg(SOCKET p_conn) {
+    Message message;
+    string fullmsg = "";
+    char headerbuff[MESSAGE_HEADER] = { 0 };
+    char messagebuff[MESSAGE_LENGTH] = { 0 };
 
+    int tnb = 0;
+    int nb = 0;
+    int length = 0;
+
+    while (tnb < 21) {
+        nb = recv(p_conn, &headerbuff[tnb], MESSAGE_HEADER, 0);
+
+        if (nb == 0) {
+            cerr << "Server has closed it's connection" << endl;
+            closesocket(p_conn);
+            exit(EXIT_FAILURE);
+        }
+        else if (nb == SOCKET_ERROR) {
+            cerr << "Recv returned an error with error code: " << WSAGetLastError() << endl;
+            closesocket(p_conn);
+            exit(EXIT_FAILURE);
+        }
+
+        tnb += nb;
+
+        if (tnb == 21) {
+            string temp = "";
+            temp.append(headerbuff);
+            length = stoi(temp.substr(18, 3));
+        }
+    }
+
+    nb = 0;
+    tnb = 0;
+
+    while (tnb < length) {
+        recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
+
+        if (nb == 0) {
+            cerr << "Server has closed it's connection" << endl;
+            closesocket(p_conn);
+            exit(EXIT_FAILURE);
+        }
+        else if (nb == SOCKET_ERROR) {
+            cerr << "Recv returned an error with error code: " << WSAGetLastError() << endl;
+            closesocket(p_conn);
+            exit(EXIT_FAILURE);
+        }
+
+        tnb += nb;
+    }
+
+    fullmsg.append(headerbuff);
+    fullmsg.append(messagebuff, length);
+
+    message = ParseMsg(fullmsg);
+
+    return message;
 }
 
 string Client::ConvertToMsg(Message p_message) {
@@ -212,10 +263,59 @@ string Client::ConvertToMsg(Message p_message) {
 
 Client::Message Client::ParseMsg(string p_message) {
     Message message;
+    
+    int i = 0;
+    while (p_message[i] != '\0') {
+        message.username += p_message[i];
+        i++;
+    }
+
+    message.type = p_message[17] - 48;
+    message.length = stoi(p_message.substr(18, 3));
+    message.content = p_message.substr(21, message.length);
+
+    return message;
 }
 
 void Client::LaunchDisplay() {
     return;
+}
+
+void Client::ClientToServer() {
+    cout << "You have successfully entered the chat room." << endl;
+    Sleep(1000);
+    cout << "The message limit is 280 characters." << endl;
+    Sleep(1000);
+    cout << "You may now begin sending messages." << endl;
+
+    string input;
+    Message message;
+    message.username = m_username;
+    message.type = 1;
+
+    while (true) {
+        cout << "> ";
+        getline(cin, input);
+
+        if (input.size() > 0 && input.size() <= 280) {
+            message.length = input.size();
+            message.content = input;
+            SendMsg(m_chatConn, message);
+            cout << endl;
+        }
+        else {
+            cerr << "Message is empty or exceeded max length. Try again." << endl;
+        }
+    }
+}
+
+void Client::ServerToDisplay() {
+    Message message;
+
+    while (true) {
+        message = RecieveMsg(m_chatConn);
+        SendMsg(m_displayConn, message);
+    }
 }
 
 Client::~Client() {

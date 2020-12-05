@@ -6,12 +6,17 @@
 #define MESSAGE_CONFIRM 2
 #define MESSAGE_DENY 3
 #define MESSAGE_ERROR 4
+#define MESSAGE_HEADER 21
+#define MESSAGE_LENGTH 280
 
 class Client {
 public:
 
 	Client();
 	~Client();
+
+	void ClientToServer();
+	void ServerToDisplay();
 
 private:
 	struct Message {
