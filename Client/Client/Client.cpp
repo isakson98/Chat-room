@@ -225,7 +225,7 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
     tnb = 0;
 
     while (tnb < length) {
-        recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
+        nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
