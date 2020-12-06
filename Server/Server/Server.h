@@ -4,8 +4,8 @@
 
 struct Client_content {
 
-	const int HEADER_LENGTH = 20;
-	char hbuff[20];      // Header buffer.
+	const int HEADER_LENGTH = 21;
+	char hbuff[21];      // Header buffer.
 
 	char username_buff[16];
 	string username_buff_str;

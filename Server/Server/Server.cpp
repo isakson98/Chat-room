@@ -168,9 +168,10 @@ bool Server::VerifyLogin(int client_count) {
 
 	ifstream infile("Username_Password.txt");
 
+	// setting client to false and cd.messageID to declining authorization
 	bool ClientExists = false;
 	cd.messageID = 3;
-	cd.hbuff[16] = 3;
+	cd.hbuff[17] = '3';
 
 	if (infile.is_open()) {
 		string file_username;
@@ -181,7 +182,7 @@ bool Server::VerifyLogin(int client_count) {
 				if (cd.message_str == file_password) {
 					ClientExists = true;
 					cd.messageID = 2;
-					cd.hbuff[16] = 2;
+					cd.hbuff[17] = '2';
 					break;
 				}
 			}
@@ -199,8 +200,8 @@ bool Server::ReceiveMsg(int client_count) {
 
 	// receving header data securely
 	int nb;
-	while (cd.nbHeaderData < 20) {
-		nb = recv(cd.csoc, &cd.hbuff[cd.nbHeaderData], 20 - cd.nbHeaderData, 0);
+	while (cd.nbHeaderData < cd.HEADER_LENGTH) {
+		nb = recv(cd.csoc, &cd.hbuff[cd.nbHeaderData], cd.HEADER_LENGTH - cd.nbHeaderData, 0);
 		if (nb <= 0)
 		{
 			cerr << "disconnect" << endl;
@@ -209,12 +210,12 @@ bool Server::ReceiveMsg(int client_count) {
 			return false;
 		}
 		cd.nbHeaderData += nb;
-		if (cd.nbHeaderData == 20)
+		if (cd.nbHeaderData == cd.HEADER_LENGTH)
 		{
 			cd.username_buff_str = cd.hbuff;
-			cd.data_type = int(cd.hbuff[16]) - 48;
+			cd.data_type = int(cd.hbuff[17]) - 48;
 			char temp[3];
-			memmove(&temp, &cd.hbuff[17], 3);
+			memmove(temp, &cd.hbuff[18], 3);
 			cd.message_length = atoi(temp);
 		}
 	}
@@ -246,14 +247,14 @@ void Server::SendMsg(int client_count) {
 	if (cd.messageID == 2) {
 		for (int i = 0; i < allClientData.size(); ++i) {
 			Client_content &client = allClientData[i];
-			send(client.csoc, client.hbuff, 20, 0);
+			send(client.csoc, client.hbuff, cd.HEADER_LENGTH, 0);
 			send(client.csoc, client.message, cd.message_length, 0);
 		}
 	}
 
 	// send only to one
 	else {
-		send(cd.csoc, cd.hbuff, 20, 0);
+		send(cd.csoc, cd.hbuff, cd.HEADER_LENGTH, 0);
 	}
 
 	//refresh counters after 
