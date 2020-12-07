@@ -1,7 +1,7 @@
 #include "Client.h"
 
 Client::Client() {
-    /*cout << "Hello! Welcome to the ChatRoom Client." << endl;
+    cout << "Hello! Welcome to the ChatRoom Client." << endl;
     Sleep(2000);
     cout << "Before chatting begins, we need a few things from you." << endl << endl;
     Sleep(2000);
@@ -18,7 +18,7 @@ Client::Client() {
 
     m_chatConn = EstablishTCPConn(m_host, m_chatService);
 
-    StartUp();*/
+    StartUp();
 }
 
 void Client::InItClient() {
@@ -225,7 +225,7 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
     tnb = 0;
 
     while (tnb < length) {
-        recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
+        nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
