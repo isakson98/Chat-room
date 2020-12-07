@@ -198,8 +198,8 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
     int nb = 0;
     int length = 0;
 
-    while (tnb < 21) {
-        nb = recv(p_conn, &headerbuff[tnb], MESSAGE_HEADER, 0);
+    while (tnb < MESSAGE_HEADER) {
+        nb = recv(p_conn, &headerbuff[tnb], MESSAGE_HEADER - tnb, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
@@ -214,10 +214,10 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
 
         tnb += nb;
 
-        if (tnb == 21) {
-            string temp = "";
-            temp.append(headerbuff);
-            length = stoi(temp.substr(18, 3));
+        if (tnb == MESSAGE_HEADER) {
+            char temp[3];
+            memcpy(temp, &headerbuff[18], 3);
+            length = atoi(temp);
         }
     }
 
@@ -251,10 +251,21 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
 
 string Client::ConvertToMsg(Message p_message) {
     string message = "";
+    string length = to_string(p_message.length);
 
     message.append(p_message.username);
     message.append("\0");
+
+    while (message.size() < 17) {
+        message.append("0");
+    }
+
     message.append(to_string(p_message.type));
+
+    for (int i = 3 - length.size(); i > 0; i--) {
+        message.append("0");
+    }
+
     message.append(to_string(p_message.length));
     message.append(p_message.content);
 
