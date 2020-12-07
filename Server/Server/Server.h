@@ -15,6 +15,7 @@ struct Client_content {
 	int message_length;
 	int messageID;
 	int nbHeaderData;   // Number of bytes read of header data.
+	int verified;
 
 	//string dbuff;
 	char message[280];        // The data buffer.
@@ -24,7 +25,7 @@ struct Client_content {
 
 	Client_content() {
 		data_type = 0; message_length = 0; nbHeaderData = 0; nbHeaderData = 0; nbData = 0;
-		 memset(hbuff, 0, 9);
+		memset(hbuff, 0, 9); verified = 0; messageID = 0; 
 	}
 };
 
@@ -41,8 +42,8 @@ public:
 	//	accepts new client
 	int AcceptNewClient();
 
-	// one per client (as a thread)?
-	void InteractWclient(int client_count);
+	// interacts using fd set
+	void InteractWclients();
 
 	
 private:
@@ -56,8 +57,13 @@ private:
 	void SendMsg(int client_count);
 	void Disconnect(int client_count);
 	
+	fd_set readmap;
+	int Check_READMAP();
+
 	//struct m_client_content;
 	vector<Client_content> allClientData;
+	vector<SOCKET> m_all_sockets;
+	SOCKET m_BIG_SOC;
 	SOCKET m_listening_soc;
 	string m_service = "42069";
 };

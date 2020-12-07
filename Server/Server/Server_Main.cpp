@@ -4,6 +4,8 @@
 
 #include "Server.h"
 
+
+
 int main() {
 
 	Server singleton;
@@ -15,6 +17,6 @@ int main() {
 		if (client_pos < 0) {
 			return 1;
 		}
-		singleton.InteractWclient(client_pos);
+		singleton.InteractWclients();
 	}
 }

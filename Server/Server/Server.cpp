@@ -1,4 +1,10 @@
 
+// messageID
+//AUTHENTICATE - 0
+//MESSAGE - 1
+//CONFIRM - 2
+//DENY - 3
+//ERROR - 4
 
 #include "stdafx.h"
 
@@ -96,11 +102,23 @@ void Server::ActivateListeningSoc() {
 	}
 	cout << "Listening socket: " << m_listening_soc << endl;
 
+	m_all_sockets.push_back(m_listening_soc);
+	m_BIG_SOC = m_listening_soc;
+
 }
 
 int Server::AcceptNewClient() {
 	
 	cout << "Waiting for new clients" << endl;
+	
+	// check if there is an impending connection
+	if (Check_READMAP() < 0) {
+		return -1;
+	}
+	// no impending connections
+	if (FD_ISSET(m_listening_soc, &readmap) == false) {
+		return 1;
+	}
 
 	// new connection
 	SOCKET newsock;
@@ -114,12 +132,15 @@ int Server::AcceptNewClient() {
 		return -1;
 	}
 
+	m_BIG_SOC = m_BIG_SOC ? m_BIG_SOC > m_listening_soc : m_listening_soc;
+
 	//insert into vector of client content
 	for (int isoc = 0; isoc < (int)allClientData.size(); isoc++)
 	{
 		// someone left, we can use his place
 		if (allClientData[isoc].csoc == 0)
 		{
+			m_all_sockets[isoc - 1] = newsock;
 			allClientData[isoc].csoc = newsock;
 			allClientData[isoc].message_length = 0;
 			allClientData[isoc].data_type = 0;
@@ -131,6 +152,7 @@ int Server::AcceptNewClient() {
 	//new client
 	Client_content newClient;
 	newClient.csoc = newsock;
+	m_all_sockets.push_back(newsock);
 	allClientData.push_back(newClient);
 
 	cout << "Connection with " << inet_ntoa(fsin.sin_addr) << ", port: " << ntohs(fsin.sin_port) << endl;
@@ -143,56 +165,45 @@ int Server::AcceptNewClient() {
 // each struct has all data about the client
 // client_count is for threads to know at which index
 // is their particular client
-void Server::InteractWclient(int client_count) {
+void Server::InteractWclients() {
 
-	if (!VerifyLogin(client_count)) {
+	if (Check_READMAP() < 0) {
 		return;
 	}
 
-	while (true) {
-		ReceiveMsg(client_count);
-		SendMsg(client_count);
+	// prioritizing new connections
+	if (FD_ISSET(m_listening_soc, &readmap)) {
+		return;
 	}
-	Disconnect(client_count);
+
+	for (unsigned int client_num = 0; client_num < allClientData.size(); client_num++) {
+		//if not set, this socket has no data currently incoming
+		// index [client_num + 1] because m_all_sockets also includes listening socket
+		if (!FD_ISSET(allClientData[client_num].csoc, &readmap)) { //m_all_sockets[client_num+1]
+			continue;
+		}
+		ReceiveMsg(client_num);
+		SendMsg(client_num);
+	}
+
 }
 
-
-// login error checking:
-// 1) name too long, type is not allowed, 
-bool Server::VerifyLogin(int client_count) {
-
-	Client_content &cd = allClientData[client_count];
-
-	// dbuff will now hold password
-	ReceiveMsg(client_count);
-
-	ifstream infile("Username_Password.txt");
-
-	// setting client to false and cd.messageID to declining authorization
-	bool ClientExists = false;
-	cd.messageID = 3;
-	cd.hbuff[17] = '3';
-
-	if (infile.is_open()) {
-		string file_username;
-		string file_password;
-
-		while (infile >> file_username >> file_password) {
-			if (cd.username_buff_str == file_username) {
-				if (cd.message_str == file_password) {
-					ClientExists = true;
-					cd.messageID = 2;
-					cd.hbuff[17] = '2';
-					break;
-				}
-			}
-		}
+int Server::Check_READMAP() {
+	// check if there is an impending connection
+	FD_ZERO(&readmap);
+	for (unsigned int is = 0; is < m_all_sockets.size(); is++)
+	{
+		if (m_all_sockets[is] == 0) continue;
+		FD_SET(m_all_sockets[is], &readmap);
+		m_BIG_SOC = m_BIG_SOC ? m_BIG_SOC > m_all_sockets[is] : m_all_sockets[is];
 	}
 
-	// send message to user 
-	SendMsg(client_count);
+	if (select(m_BIG_SOC + 1, &readmap, NULL, NULL, NULL) == SOCKET_ERROR) {
+		WSACleanup();
+		return -1;
+	}
 
-	return ClientExists;
+	return 0;
 }
 
 bool Server::ReceiveMsg(int client_count) {
@@ -204,6 +215,7 @@ bool Server::ReceiveMsg(int client_count) {
 		nb = recv(cd.csoc, &cd.hbuff[cd.nbHeaderData], cd.HEADER_LENGTH - cd.nbHeaderData, 0);
 		if (nb <= 0)
 		{
+			Disconnect(client_count);
 			cerr << "disconnect" << endl;
 			closesocket(cd.csoc);
 			cd.csoc = 0;
@@ -236,22 +248,60 @@ bool Server::ReceiveMsg(int client_count) {
 	cd.message_str = cd.message;
 	cd.message_str = cd.message_str.substr(0, cd.message_length);
 
+	if (cd.verified == 0) {
+		VerifyLogin(client_count);
+	}
+
 	return true;
+}
+
+// login error checking:
+// 1) name too long, type is not allowed, 
+bool Server::VerifyLogin(int client_count) {
+
+	Client_content &cd = allClientData[client_count];
+
+	ifstream infile("Username_Password.txt");
+
+	// setting client to false and cd.messageID to declining authorization
+	bool ClientExists = false;
+	cd.hbuff[17] = '3';
+
+	if (infile.is_open()) {
+		string file_username;
+		string file_password;
+
+		while (infile >> file_username >> file_password) {
+			if (cd.username_buff_str == file_username) {
+				if (cd.message_str == file_password) {
+					ClientExists = true;
+					cd.verified = 1;
+					cd.hbuff[17] = '2';
+					break;
+				}
+			}
+		}
+	}
+
+	return ClientExists;
 }
 
 void Server::SendMsg(int client_count) {
 
 	Client_content &cd = allClientData[client_count];
 
+	if (cd.csoc == 0) {
+		return;
+	}
+
 	//send everyone
-	if (cd.messageID == 2) {
-		for (int i = 0; i < allClientData.size(); ++i) {
+	if (cd.messageID == 1) {
+		for (unsigned int i = 0; i < allClientData.size(); ++i) {
 			Client_content &client = allClientData[i];
 			send(client.csoc, client.hbuff, cd.HEADER_LENGTH, 0);
 			send(client.csoc, client.message, cd.message_length, 0);
 		}
 	}
-
 	// send only to one
 	else {
 		send(cd.csoc, cd.hbuff, cd.HEADER_LENGTH, 0);
@@ -261,15 +311,13 @@ void Server::SendMsg(int client_count) {
 	cd.message_length = 0;
 	cd.nbData = 0;
 	cd.nbHeaderData = 0;
+	return;
 
 }
 
-// is this needed?
 void Server::Disconnect(int client_count) {
-
 	Client_content &cd = allClientData[client_count];
-
 	cd.csoc = 0;
-
-
+	m_all_sockets[client_count + 1] = 0;
+	cd.verified = 0;
 }
