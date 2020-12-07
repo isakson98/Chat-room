@@ -298,13 +298,14 @@ void Server::SendMsg(int client_count) {
 	if (cd.messageID == 1) {
 		for (unsigned int i = 0; i < allClientData.size(); ++i) {
 			Client_content &client = allClientData[i];
-			send(client.csoc, client.hbuff, cd.HEADER_LENGTH, 0);
-			send(client.csoc, client.message, cd.message_length, 0);
+			send(client.csoc, cd.hbuff, cd.HEADER_LENGTH, 0);
+			send(client.csoc, cd.message, cd.message_length, 0);
 		}
 	}
 	// send only to one
 	else {
 		send(cd.csoc, cd.hbuff, cd.HEADER_LENGTH, 0);
+		send(cd.csoc, cd.message, cd.message_length, 0);
 	}
 
 	//refresh counters after 
