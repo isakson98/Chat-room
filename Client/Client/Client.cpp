@@ -119,9 +119,9 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
+    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 
-    LaunchDisplay();
+    //LaunchDisplay();
 }
 
 void Client::AskForCredentials() {
@@ -314,7 +314,9 @@ void Client::ServerToDisplay() {
 
     while (true) {
         message = RecieveMsg(m_chatConn);
-        SendMsg(m_displayConn, message);
+        string temp = ConvertToMsg(message);
+        cout << temp << endl;
+        //SendMsg(m_displayConn, message);
     }
 }
 
