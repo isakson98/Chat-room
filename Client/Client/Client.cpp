@@ -181,7 +181,7 @@ bool Client::Authenticate(string p_username, string p_password) {
 }
 
 void Client::SendMsg(SOCKET p_conn, Message p_message) {
-    if (send(p_conn, ConvertToMsg(p_message).c_str(), p_message.length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
+    if (send(p_conn, ConvertToMsg(p_message), p_message.length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
         cerr << "Send returned an error with error code: " << WSAGetLastError() << endl;
         closesocket(p_conn);
         exit(EXIT_FAILURE);
@@ -190,9 +190,8 @@ void Client::SendMsg(SOCKET p_conn, Message p_message) {
 
 Client::Message Client::RecieveMsg(SOCKET p_conn) {
     Message message;
-    string fullmsg = "";
-    char headerbuff[MESSAGE_HEADER] = { 0 };
-    char messagebuff[MESSAGE_LENGTH] = { 0 };
+    char headerbuff[MESSAGE_HEADER];
+    char messagebuff[MESSAGE_LENGTH];
 
     int tnb = 0;
     int nb = 0;
@@ -241,49 +240,54 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
         tnb += nb;
     }
 
-    fullmsg.append(headerbuff);
-    fullmsg.append(messagebuff, length);
-
-    message = ParseMsg(fullmsg);
+    message = ParseMsg(headerbuff, messagebuff, length);
 
     return message;
 }
 
-string Client::ConvertToMsg(Message p_message) {
-    string message = "";
+char* Client::ConvertToMsg(Message p_message) {
+    char message[MESSAGE_HEADER + MESSAGE_LENGTH];
+    int count = 0;
+
+    strncpy(message, p_message.username.c_str(), p_message.username.size());
+    count += p_message.username.size();
+
+    while (count < 17) {
+        message[count] = '0';
+        count++;
+    }
+
+    message[count] = p_message.type + 48;
+    count++;
+
     string length = to_string(p_message.length);
-
-    message.append(p_message.username);
-    message.append("\0");
-
-    while (message.size() < 17) {
-        message.append("0");
-    }
-
-    message.append(to_string(p_message.type));
-
     for (int i = 3 - length.size(); i > 0; i--) {
-        message.append("0");
+        message[count] = '0';
+        count++;
     }
 
-    message.append(to_string(p_message.length));
-    message.append(p_message.content);
+    strncpy(&message[count], length.c_str(), length.size());
+    count += length.size();
+
+    strncpy(&message[count], p_message.content.c_str(), p_message.content.size());
 
     return message;
 }
 
-Client::Message Client::ParseMsg(string p_message) {
+Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) {
     Message message;
     
     int i = 0;
-    while (p_message[i] != '\0') {
-        message.username += p_message[i];
+    while (p_header[i] != '\0') {
+        message.username += p_header[i];
         i++;
     }
 
-    message.type = p_message[17] - 48;
-    message.length = stoi(p_message.substr(18, 3));
-    message.content = p_message.substr(21, message.length);
+    message.type = p_header[17] - 48;
+
+    message.length = p_length;
+    
+    message.content.append(p_message, p_length);
 
     return message;
 }
