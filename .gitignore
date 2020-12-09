@@ -1,3 +1,5 @@
+.idea
+cmake*
 /Server/Debug/
 /Server/Server/Debug/
 /Client/Debug/
@@ -9,3 +11,4 @@
 /.vs/
 /Client/.vs/
 /Server/.vs/
+

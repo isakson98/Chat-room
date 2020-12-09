@@ -40,8 +40,8 @@ private:
 
 	void SendMsg(SOCKET p_conn, Message p_message);
 	Message RecieveMsg(SOCKET p_conn);
-	string ConvertToMsg(Message p_message);
-	Message ParseMsg(string p_message);
+	char* ConvertToMsg(Message p_message);
+	Message ParseMsg(char* p_header, char* p_message, int p_length);
 
 	void LaunchDisplay();
 
