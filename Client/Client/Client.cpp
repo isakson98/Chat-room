@@ -223,7 +223,7 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
     nb = 0;
     tnb = 0;
 
-    while (tnb < length) {
+    while (tnb < MESSAGE_LENGTH) {
         nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
 
         if (nb == 0) {
@@ -274,7 +274,7 @@ char* Client::ConvertToMsg(Message p_message) {
 
     strncpy(&message[count], p_message.content.c_str(), p_message.content.size());
 
-    cout << "sending: ";
+    cout << "Sending: ";
     for (int i = 0; i < MESSAGE_HEADER + p_message.length; i++) {
         if (message[i] == '\0') {
             cout << "'\\" << "0'";
@@ -305,7 +305,7 @@ Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) 
 
     cout << "Recieving: ";
     for (int i = 0; i < 21; i++) {
-        if( p_header == '\0') {
+        if( p_header[i] == '\0') {
             cout << "'\\" << "0'";
         }
         else {
