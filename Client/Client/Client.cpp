@@ -181,7 +181,7 @@ bool Client::Authenticate(string p_username, string p_password) {
 }
 
 void Client::SendMsg(SOCKET p_conn, Message p_message) {
-    if (send(p_conn, ConvertToMsg(p_message), p_message.length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
+    if (send(p_conn, ConvertToMsg(p_message), MESSAGE_HEADER + MESSAGE_LENGTH, 0) == SOCKET_ERROR) {
         cerr << "Send returned an error with error code: " << WSAGetLastError() << endl;
         closesocket(p_conn);
         exit(EXIT_FAILURE);
