@@ -1,6 +1,8 @@
 #include "Client.h"
 
 Client::Client() {
+    LaunchDisplay();
+    Sleep(10000);
     cout << "Hello! Welcome to the ChatRoom Client." << endl;
     Sleep(2000);
     cout << "Before chatting begins, we need a few things from you." << endl << endl;
@@ -278,7 +280,25 @@ Client::Message Client::ParseMsg(string p_message) {
 }
 
 void Client::LaunchDisplay() {
-    return;
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+
+    ZeroMemory(&si, sizeof(si));
+
+    si.cb = sizeof(si);
+
+    ZeroMemory(&pi, sizeof(pi));
+
+    // Note that we are creating a new console window.
+
+    if (!CreateProcess("C:\\Users\\Sal\\CLionProjects\\Chat-room\\cmake-build-debug\\DisplayChat.exe",
+                       NULL, NULL, NULL, false, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi) )
+
+    {
+
+        cerr << "CreateProcessA - failed" << endl;
+
+    }
 }
 
 void Client::ClientToServer() {
