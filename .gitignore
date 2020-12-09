@@ -1,2 +1,14 @@
 .idea
 cmake*
+/Server/Debug/
+/Server/Server/Debug/
+/Client/Debug/
+/Client/Client/Debug/
+*.vcxproj
+*.filters
+*.user
+*.sln
+/.vs/
+/Client/.vs/
+/Server/.vs/
+

@@ -121,9 +121,9 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
+    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 
-    LaunchDisplay();
+    //LaunchDisplay();
 }
 
 void Client::AskForCredentials() {
@@ -164,7 +164,7 @@ void Client::AskForCredentials() {
 
 bool Client::Authenticate(string p_username, string p_password) {
     Message login;
-    login.username = m_username + '\0';
+    login.username = m_username;
     login.type = 0;
     login.length = m_password.size();
     login.content = m_password;
@@ -183,7 +183,7 @@ bool Client::Authenticate(string p_username, string p_password) {
 }
 
 void Client::SendMsg(SOCKET p_conn, Message p_message) {
-    if (send(p_conn, ConvertToMsg(p_message).c_str(), p_message.length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
+    if (send(p_conn, ConvertToMsg(p_message), MESSAGE_HEADER + MESSAGE_LENGTH, 0) == SOCKET_ERROR) {
         cerr << "Send returned an error with error code: " << WSAGetLastError() << endl;
         closesocket(p_conn);
         exit(EXIT_FAILURE);
@@ -192,16 +192,15 @@ void Client::SendMsg(SOCKET p_conn, Message p_message) {
 
 Client::Message Client::RecieveMsg(SOCKET p_conn) {
     Message message;
-    string fullmsg = "";
-    char headerbuff[MESSAGE_HEADER] = { 0 };
-    char messagebuff[MESSAGE_LENGTH] = { 0 };
+    char headerbuff[MESSAGE_HEADER];
+    char messagebuff[MESSAGE_LENGTH];
 
     int tnb = 0;
     int nb = 0;
     int length = 0;
 
-    while (tnb < 21) {
-        nb = recv(p_conn, &headerbuff[tnb], MESSAGE_HEADER, 0);
+    while (tnb < MESSAGE_HEADER) {
+        nb = recv(p_conn, &headerbuff[tnb], MESSAGE_HEADER - tnb, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
@@ -216,18 +215,18 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
 
         tnb += nb;
 
-        if (tnb == 21) {
-            string temp = "";
-            temp.append(headerbuff);
-            length = stoi(temp.substr(18, 3));
+        if (tnb == MESSAGE_HEADER) {
+            char temp[3];
+            memcpy(temp, &headerbuff[18], 3);
+            length = atoi(temp);
         }
     }
 
     nb = 0;
     tnb = 0;
 
-    while (tnb < length) {
-        recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
+    while (tnb < MESSAGE_LENGTH) {
+        nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
@@ -243,38 +242,83 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
         tnb += nb;
     }
 
-    fullmsg.append(headerbuff);
-    fullmsg.append(messagebuff, length);
-
-    message = ParseMsg(fullmsg);
+    message = ParseMsg(headerbuff, messagebuff, length);
 
     return message;
 }
 
-string Client::ConvertToMsg(Message p_message) {
-    string message = "";
+char* Client::ConvertToMsg(Message p_message) {
+    char message[MESSAGE_HEADER + MESSAGE_LENGTH];
+    int count = 0;
 
-    message.append(p_message.username);
-    message.append("\0");
-    message.append(to_string(p_message.type));
-    message.append(to_string(p_message.length));
-    message.append(p_message.content);
+    strncpy(message, p_message.username.c_str(), p_message.username.size());
+    count += p_message.username.size();
+
+    message[count] = '\0';
+    count++;
+
+    while (count < 17) {
+        message[count] = '0';
+        count++;
+    }
+
+    message[count] = p_message.type + 48;
+    count++;
+
+    string length = to_string(p_message.length);
+    for (int i = 3 - length.size(); i > 0; i--) {
+        message[count] = '0';
+        count++;
+    }
+
+    strncpy(&message[count], length.c_str(), length.size());
+    count += length.size();
+
+    strncpy(&message[count], p_message.content.c_str(), p_message.content.size());
+
+    cout << "Sending: ";
+    for (int i = 0; i < MESSAGE_HEADER + p_message.length; i++) {
+        if (message[i] == '\0') {
+            cout << "'\\" << "0'";
+        }
+        else {
+            cout << message[i];
+        }
+    }
+    cout << endl;
 
     return message;
 }
 
-Client::Message Client::ParseMsg(string p_message) {
+Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) {
     Message message;
     
     int i = 0;
-    while (p_message[i] != '\0') {
-        message.username += p_message[i];
+    while (p_header[i] != '\0') {
+        message.username += p_header[i];
         i++;
     }
 
-    message.type = p_message[17] - 48;
-    message.length = stoi(p_message.substr(18, 3));
-    message.content = p_message.substr(21, message.length);
+    message.type = p_header[17] - 48;
+
+    message.length = p_length;
+    
+    message.content.append(p_message, p_length);
+
+    cout << "Recieving: ";
+    for (int i = 0; i < 21; i++) {
+        if( p_header[i] == '\0') {
+            cout << "'\\" << "0'";
+        }
+        else {
+            cout << p_header[i];
+        }
+    }
+
+    for (int i = 0; i < p_length; i++) {
+        cout << p_message[i];
+    }
+    cout << endl;
 
     return message;
 }
@@ -334,7 +378,9 @@ void Client::ServerToDisplay() {
 
     while (true) {
         message = RecieveMsg(m_chatConn);
-        SendMsg(m_displayConn, message);
+        //string temp = ConvertToMsg(message);
+        //cout << temp << endl;
+        //SendMsg(m_displayConn, message);
     }
 }
 
