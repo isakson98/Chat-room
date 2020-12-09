@@ -1,8 +1,6 @@
 #include "Client.h"
 
 Client::Client() {
-    LaunchDisplay();
-    Sleep(10000);
     cout << "Hello! Welcome to the ChatRoom Client." << endl;
     Sleep(2000);
     cout << "Before chatting begins, we need a few things from you." << endl << endl;
@@ -121,9 +119,9 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
+    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 
-    //LaunchDisplay();
+    LaunchDisplay();
 }
 
 void Client::AskForCredentials() {
