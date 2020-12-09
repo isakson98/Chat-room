@@ -162,7 +162,7 @@ void Client::AskForCredentials() {
 
 bool Client::Authenticate(string p_username, string p_password) {
     Message login;
-    login.username = m_username + '\0';
+    login.username = m_username;
     login.type = 0;
     login.length = m_password.size();
     login.content = m_password;
@@ -223,7 +223,7 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
     nb = 0;
     tnb = 0;
 
-    while (tnb < length) {
+    while (tnb < MESSAGE_LENGTH) {
         nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
 
         if (nb == 0) {
@@ -252,6 +252,9 @@ char* Client::ConvertToMsg(Message p_message) {
     strncpy(message, p_message.username.c_str(), p_message.username.size());
     count += p_message.username.size();
 
+    message[count] = '\0';
+    count++;
+
     while (count < 17) {
         message[count] = '0';
         count++;
@@ -271,6 +274,17 @@ char* Client::ConvertToMsg(Message p_message) {
 
     strncpy(&message[count], p_message.content.c_str(), p_message.content.size());
 
+    cout << "Sending: ";
+    for (int i = 0; i < MESSAGE_HEADER + p_message.length; i++) {
+        if (message[i] == '\0') {
+            cout << "'\\" << "0'";
+        }
+        else {
+            cout << message[i];
+        }
+    }
+    cout << endl;
+
     return message;
 }
 
@@ -288,6 +302,21 @@ Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) 
     message.length = p_length;
     
     message.content.append(p_message, p_length);
+
+    cout << "Recieving: ";
+    for (int i = 0; i < 21; i++) {
+        if( p_header[i] == '\0') {
+            cout << "'\\" << "0'";
+        }
+        else {
+            cout << p_header[i];
+        }
+    }
+
+    for (int i = 0; i < p_length; i++) {
+        cout << p_message[i];
+    }
+    cout << endl;
 
     return message;
 }
@@ -329,8 +358,8 @@ void Client::ServerToDisplay() {
 
     while (true) {
         message = RecieveMsg(m_chatConn);
-        string temp = ConvertToMsg(message);
-        cout << temp << endl;
+        //string temp = ConvertToMsg(message);
+        //cout << temp << endl;
         //SendMsg(m_displayConn, message);
     }
 }
