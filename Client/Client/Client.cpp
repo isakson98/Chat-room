@@ -117,9 +117,9 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
+    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 
-    //LaunchDisplay();
+    LaunchDisplay();
 }
 
 void Client::AskForCredentials() {
@@ -320,7 +320,25 @@ Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) 
 }
 
 void Client::LaunchDisplay() {
-    return;
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+
+    ZeroMemory(&si, sizeof(si));
+
+    si.cb = sizeof(si);
+
+    ZeroMemory(&pi, sizeof(pi));
+
+    // Note that we are creating a new console window.
+
+    if (!CreateProcess("C:\\Users\\Sal\\CLionProjects\\Chat-room\\cmake-build-debug\\DisplayChat.exe",
+                       NULL, NULL, NULL, false, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi) )
+
+    {
+
+        cerr << "CreateProcessA - failed" << endl;
+
+    }
 }
 
 void Client::ClientToServer() {
