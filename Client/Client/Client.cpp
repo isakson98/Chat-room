@@ -11,17 +11,9 @@ Client::Client() {
     m_host = "";
     m_chatConn = NULL;
     m_displayConn = NULL;
-
-    InItClient();
-
-    m_host = AskForIP();
-
-    m_chatConn = EstablishTCPConn(m_host, m_chatService);
-
-    StartUp();
 }
 
-void Client::InItClient() {
+void Client::InIt() {
     WORD wVersionRequested;
     WSADATA wsaData;
     int err;
@@ -115,6 +107,12 @@ SOCKET Client::EstablishTCPConn(string p_host, string p_service) {
 }
 
 void Client::StartUp() {
+    InIt();
+
+    m_host = AskForIP();
+
+    m_chatConn = EstablishTCPConn(m_host, m_chatService);
+
     do {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
@@ -181,7 +179,7 @@ bool Client::Authenticate(string p_username, string p_password) {
 }
 
 void Client::SendMsg(SOCKET p_conn, Message p_message) {
-    if (send(p_conn, ConvertToMsg(p_message), MESSAGE_HEADER + MESSAGE_LENGTH, 0) == SOCKET_ERROR) {
+    if (send(p_conn, ConvertToMsg(p_message), p_message.length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
         cerr << "Send returned an error with error code: " << WSAGetLastError() << endl;
         closesocket(p_conn);
         exit(EXIT_FAILURE);
@@ -223,7 +221,7 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
     nb = 0;
     tnb = 0;
 
-    while (tnb < MESSAGE_LENGTH) {
+    while (tnb < length) {
         nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
 
         if (nb == 0) {
