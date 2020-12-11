@@ -295,6 +295,7 @@ void Server::SendMsg(int client_count) {
 	}
 
 	//send everyone
+
 	if (cd.messageID == 1) {
 		for (unsigned int i = 0; i < allClientData.size(); ++i) {
 			Client_content &client = allClientData[i];
@@ -312,6 +313,7 @@ void Server::SendMsg(int client_count) {
 	cd.message_length = 0;
 	cd.nbData = 0;
 	cd.nbHeaderData = 0;
+	memset(cd.hbuff, '0', cd.HEADER_LENGTH);
 	return;
 
 }
