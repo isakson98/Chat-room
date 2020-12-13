@@ -3,6 +3,7 @@ cmake*
 /Server/Debug/
 /Server/Server/Debug/
 /Client/Debug/
+/Client/packages
 /Client/Client/Debug/
 *.vcxproj
 *.filters

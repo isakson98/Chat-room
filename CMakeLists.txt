@@ -21,4 +21,5 @@ add_executable(DisplayChat
         Client/Client/DisplayChat/DisplayChat.cpp
         Client/Client/DisplayChat/DisplayChat.h
         Client/Client/Client.h
-        Client/Client/DisplayChat/DisplayChat_Main.cpp)
+        Client/Client/DisplayChat/DisplayChat_Main.cpp
+        )
