@@ -1,5 +1,5 @@
 
-// messageID
+// data_type
 //AUTHENTICATE - 0
 //MESSAGE - 1
 //CONFIRM - 2
@@ -25,6 +25,8 @@ Server::~Server() {
 // activated by user
 void Server::InitServer() {
 
+	m_BIG_SOC = -2;
+
 	cout << endl;
 	cout << "Initializing server application" << endl;
 	// Make sure that we can connect:
@@ -49,6 +51,7 @@ void Server::InitServer() {
 	}
 	
 	ActivateListeningSoc();
+	Get_user_and_pass();
 	cout << "Initialization successful" << endl;
 	cout << endl;
 }
@@ -107,6 +110,19 @@ void Server::ActivateListeningSoc() {
 
 }
 
+void Server::Get_user_and_pass() {
+	ifstream infile("Username_Password.txt");
+
+	if (infile.is_open()) {
+		string file_username;
+		string file_password;
+
+		while (infile >> file_username >> file_password) {
+			user_pass.insert({ file_username, file_password });
+		}
+	}
+}
+
 int Server::AcceptNewClient() {
 	
 	cout << "Waiting for new clients" << endl;
@@ -132,7 +148,10 @@ int Server::AcceptNewClient() {
 		return -1;
 	}
 
-	m_BIG_SOC = m_BIG_SOC ? m_BIG_SOC > m_listening_soc : m_listening_soc;
+	if (m_BIG_SOC < newsock) {
+		m_BIG_SOC = newsock;
+	}
+	// m_BIG_SOC = (m_BIG_SOC > newsock) ? m_BIG_SOC : newsock;
 
 	//insert into vector of client content
 	for (int isoc = 0; isoc < (int)allClientData.size(); isoc++)
@@ -140,7 +159,8 @@ int Server::AcceptNewClient() {
 		// someone left, we can use his place
 		if (allClientData[isoc].csoc == 0)
 		{
-			m_all_sockets[isoc - 1] = newsock;
+			// bug here? fixed
+			m_all_sockets[isoc + 1] = newsock;
 			allClientData[isoc].csoc = newsock;
 			allClientData[isoc].message_length = 0;
 			allClientData[isoc].data_type = 0;
@@ -195,7 +215,7 @@ int Server::Check_READMAP() {
 	{
 		if (m_all_sockets[is] == 0) continue;
 		FD_SET(m_all_sockets[is], &readmap);
-		m_BIG_SOC = m_BIG_SOC ? m_BIG_SOC > m_all_sockets[is] : m_all_sockets[is];
+		m_BIG_SOC = m_BIG_SOC > m_all_sockets[is] ? m_BIG_SOC : m_all_sockets[is];
 	}
 
 	if (select(m_BIG_SOC + 1, &readmap, NULL, NULL, NULL) == SOCKET_ERROR) {
@@ -215,10 +235,9 @@ bool Server::ReceiveMsg(int client_count) {
 		nb = recv(cd.csoc, &cd.hbuff[cd.nbHeaderData], cd.HEADER_LENGTH - cd.nbHeaderData, 0);
 		if (nb <= 0)
 		{
+			closesocket(cd.csoc);
 			Disconnect(client_count);
 			cerr << "disconnect" << endl;
-			closesocket(cd.csoc);
-			cd.csoc = 0;
 			return false;
 		}
 		cd.nbHeaderData += nb;
@@ -261,26 +280,16 @@ bool Server::VerifyLogin(int client_count) {
 
 	Client_content &cd = allClientData[client_count];
 
-	ifstream infile("Username_Password.txt");
-
-	// setting client to false and cd.messageID to declining authorization
+	// setting client to false and cd.data_type to declining authorization
 	bool ClientExists = false;
 	cd.hbuff[17] = '3';
 
-	if (infile.is_open()) {
-		string file_username;
-		string file_password;
-
-		while (infile >> file_username >> file_password) {
-			if (cd.username_buff_str == file_username) {
-				if (cd.message_str == file_password) {
-					ClientExists = true;
-					cd.verified = 1;
-					cd.messageID = 2;
-					cd.hbuff[17] = '2';
-					break;
-				}
-			}
+	if (user_pass.find(cd.username_buff_str) != user_pass.end()) {
+		if (user_pass[cd.username_buff_str] == cd.message_str) {
+			ClientExists = true;
+			cd.verified = 1;
+			cd.data_type = 2;
+			cd.hbuff[17] = '2';
 		}
 	}
 
@@ -297,7 +306,7 @@ void Server::SendMsg(int client_count) {
 
 	//send everyone
 
-	if (cd.messageID == 1) {
+	if (cd.data_type == 1) {
 		for (unsigned int i = 0; i < allClientData.size(); ++i) {
 			Client_content &client = allClientData[i];
 			send(client.csoc, cd.hbuff, cd.HEADER_LENGTH, 0);
@@ -311,6 +320,8 @@ void Server::SendMsg(int client_count) {
 	}
 
 	//refresh counters after 
+	memset(cd.message, 0, cd.message_length);
+	cd.message_str = "";
 	cd.message_length = 0;
 	cd.nbData = 0;
 	cd.nbHeaderData = 0;
@@ -321,7 +332,11 @@ void Server::SendMsg(int client_count) {
 
 void Server::Disconnect(int client_count) {
 	Client_content &cd = allClientData[client_count];
+	FD_CLR(cd.csoc, &readmap);
 	cd.csoc = 0;
 	m_all_sockets[client_count + 1] = 0;
 	cd.verified = 0;
+	cd.username_buff_str = "";
+	memset(cd.message, 0, cd.message_length);
+	cd.message_str = "";
 }

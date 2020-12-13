@@ -51,6 +51,10 @@ private:
 	//	activate listening socket inside InitServer()
 	void ActivateListeningSoc();
 
+	// get all usernames and passwords for faster access
+	void Get_user_and_pass();
+	unordered_map <string, string> user_pass;
+
 	// everything to handle per client inside InteractWclient()
 	bool VerifyLogin(int client_count);
 	bool ReceiveMsg(int client_count);
