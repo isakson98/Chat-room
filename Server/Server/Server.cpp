@@ -276,6 +276,7 @@ bool Server::VerifyLogin(int client_count) {
 				if (cd.message_str == file_password) {
 					ClientExists = true;
 					cd.verified = 1;
+					cd.messageID = 2;
 					cd.hbuff[17] = '2';
 					break;
 				}
