@@ -25,13 +25,21 @@ protected:
 		int type;
 		int length;
 		string content;
+		char message[MESSAGE_HEADER + MESSAGE_LENGTH];
+
+		Message() {
+			username = "";
+			type = -1;
+			length = 0;
+			content = "";
+			memset(message, 0, MESSAGE_HEADER + MESSAGE_LENGTH);
+		}
 	};
 
 	void InIt();
-
-	void SendMsg(SOCKET p_conn, Message p_message);
-	Message RecieveMsg(SOCKET p_conn);
-	char* ConvertToMsg(Message p_message);
+	void SendMsg(SOCKET p_conn, Message* p_message);
+	Message ReceiveMsg(SOCKET p_conn);
+	void ConvertToMsg(Message* p_message);
 	Message ParseMsg(char* p_header, char* p_message, int p_length);
 
 	string m_username;
