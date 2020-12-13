@@ -352,8 +352,7 @@ void Client::ServerToDisplay() {
 
     while (true) {
         message = ReceiveMsg(m_chatConn);
-		cout << message.content << endl;
-        //SendMsg(m_displayConn, &message);
+        SendMsg(m_displayConn, &message);
     }
 }
 
