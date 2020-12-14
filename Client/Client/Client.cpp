@@ -1,11 +1,6 @@
 #include "Client.h"
 
 Client::Client() {
-    cout << "Hello! Welcome to the ChatRoom Client." << endl;
-    Sleep(2000);
-    cout << "Before chatting begins, we need a few things from you." << endl << endl;
-    Sleep(2000);
-
     m_username = "";
     m_password = "";
     m_host = "";
@@ -107,6 +102,11 @@ SOCKET Client::EstablishTCPConn(string p_host, string p_service) {
 }
 
 void Client::StartUp() {
+    cout << "Hello! Welcome to the ChatRoom Client." << endl;
+    Sleep(2000);
+    cout << "Before chatting begins, we need a few things from you." << endl << endl;
+    Sleep(2000);
+
     InIt();
 
     m_host = AskForIP();
@@ -119,7 +119,6 @@ void Client::StartUp() {
 
     LaunchDisplay();
     m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
-
 }
 
 void Client::AskForCredentials() {
@@ -165,9 +164,9 @@ bool Client::Authenticate(string p_username, string p_password) {
     login.length = m_password.size();
     login.content = m_password;
 
-    SendMsg(m_chatConn, login);
+    SendMsg(m_chatConn, &login);
 
-    login = RecieveMsg(m_chatConn);
+    login = ReceiveMsg(m_chatConn);
 
     if (login.type == 2) {
         return true;
@@ -178,15 +177,17 @@ bool Client::Authenticate(string p_username, string p_password) {
     }
 }
 
-void Client::SendMsg(SOCKET p_conn, Message p_message) {
-    if (send(p_conn, ConvertToMsg(p_message), p_message.length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
+void Client::SendMsg(SOCKET p_conn, Message* p_message) {
+    ConvertToMsg(p_message);
+
+    if (send(p_conn, p_message->message, p_message->length + MESSAGE_HEADER, 0) == SOCKET_ERROR) {
         cerr << "Send returned an error with error code: " << WSAGetLastError() << endl;
         closesocket(p_conn);
         exit(EXIT_FAILURE);
     }
 }
 
-Client::Message Client::RecieveMsg(SOCKET p_conn) {
+Client::Message Client::ReceiveMsg(SOCKET p_conn) {
     Message message;
     char headerbuff[MESSAGE_HEADER];
     char messagebuff[MESSAGE_LENGTH];
@@ -243,47 +244,35 @@ Client::Message Client::RecieveMsg(SOCKET p_conn) {
     return message;
 }
 
-char* Client::ConvertToMsg(Message p_message) {
-    char message[MESSAGE_HEADER + MESSAGE_LENGTH];
+void Client::ConvertToMsg(Message* p_message) {
     int count = 0;
 
-    strncpy(message, p_message.username.c_str(), p_message.username.size());
-    count += p_message.username.size();
+    strncpy(p_message->message, p_message->username.c_str(), p_message->username.size());
+    count += p_message->username.size();
 
-    message[count] = '\0';
+    p_message->message[count] = '\0';
     count++;
 
     while (count < 17) {
-        message[count] = '0';
+        p_message->message[count] = '0';
         count++;
     }
 
-    message[count] = p_message.type + 48;
+    p_message->message[count] = p_message->type + 48;
     count++;
 
-    string length = to_string(p_message.length);
+    string length = to_string(p_message->length);
     for (int i = 3 - length.size(); i > 0; i--) {
-        message[count] = '0';
+        p_message->message[count] = '0';
         count++;
     }
 
-    strncpy(&message[count], length.c_str(), length.size());
+    strncpy(&p_message->message[count], length.c_str(), length.size());
     count += length.size();
 
-    strncpy(&message[count], p_message.content.c_str(), p_message.content.size());
+    strncpy(&p_message->message[count], p_message->content.c_str(), p_message->content.size());
 
-    cout << "Sending: ";
-    for (int i = 0; i < MESSAGE_HEADER + p_message.length; i++) {
-        if (message[i] == '\0') {
-            cout << "'\\" << "0'";
-        }
-        else {
-            cout << message[i];
-        }
-    }
     cout << endl;
-
-    return message;
 }
 
 Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) {
@@ -301,20 +290,8 @@ Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) 
     
     message.content.append(p_message, p_length);
 
-    cout << "Recieving: ";
-    for (int i = 0; i < 21; i++) {
-        if( p_header[i] == '\0') {
-            cout << "'\\" << "0'";
-        }
-        else {
-            cout << p_header[i];
-        }
-    }
-
-    for (int i = 0; i < p_length; i++) {
-        cout << p_message[i];
-    }
-    cout << endl;
+    memcpy(message.message, p_header, MESSAGE_HEADER);
+    memcpy(&message.message[MESSAGE_HEADER], p_message, p_length);
 
     return message;
 }
@@ -360,8 +337,10 @@ void Client::ClientToServer() {
         if (input.size() > 0 && input.size() <= 280) {
             message.length = input.size();
             message.content = input;
-            SendMsg(m_chatConn, message);
-            SendMsg(m_displayConn, message);
+
+            SendMsg(m_chatConn, &message);
+            SendMsg(m_displayConn, &message);
+
             cout << endl;
         }
         else {
@@ -374,10 +353,8 @@ void Client::ServerToDisplay() {
     Message message;
 
     while (true) {
-        message = RecieveMsg(m_chatConn);
-        //string temp = ConvertToMsg(message);
-        //cout << temp << endl;
-        //SendMsg(m_displayConn, message);
+        message = ReceiveMsg(m_chatConn);
+        SendMsg(m_displayConn, &message);
     }
 }
 
