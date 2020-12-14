@@ -94,7 +94,7 @@ SOCKET Client::EstablishTCPConn(string p_host, string p_service) {
 
     if (connect(s, (struct sockaddr*)&sin, sizeof(sin)) == SOCKET_ERROR)
     {
-        cerr << "Attempt to connect to server failed: " << WSAGetLastError() << endl;
+        cerr << "Attempt to connect to server failed: " << p_service << endl;
         exit(EXIT_FAILURE);
     }
 
