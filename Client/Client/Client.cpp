@@ -117,9 +117,8 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
-
-    //LaunchDisplay();
+    LaunchDisplay();
+    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 }
 
 void Client::AskForCredentials() {
@@ -338,7 +337,10 @@ void Client::ClientToServer() {
         if (input.size() > 0 && input.size() <= 280) {
             message.length = input.size();
             message.content = input;
+
             SendMsg(m_chatConn, &message);
+            SendMsg(m_displayConn, &message);
+
             cout << endl;
         }
         else {

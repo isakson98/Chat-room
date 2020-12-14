@@ -42,6 +42,8 @@ protected:
 	void ConvertToMsg(Message* p_message);
 	Message ParseMsg(char* p_header, char* p_message, int p_length);
 
+    SOCKET EstablishTCPConn(string p_host, string p_service);
+
 	string m_username;
 	string m_password;
 	string m_host;
@@ -50,7 +52,6 @@ protected:
 
 private:
 	string AskForIP();
-	SOCKET EstablishTCPConn(string p_host, string p_service);
 	void AskForCredentials();
 	bool Authenticate(string p_username, string p_password);
 	void LaunchDisplay();
