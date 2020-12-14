@@ -117,8 +117,8 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    LaunchDisplay();
-    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
+    //LaunchDisplay();
+    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 }
 
 void Client::AskForCredentials() {
@@ -271,8 +271,6 @@ void Client::ConvertToMsg(Message* p_message) {
     count += length.size();
 
     strncpy(&p_message->message[count], p_message->content.c_str(), p_message->content.size());
-
-    cout << endl;
 }
 
 Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) {
@@ -296,7 +294,7 @@ Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) 
     return message;
 }
 
-void Client::LaunchDisplay() {
+/*void Client::LaunchDisplay() {
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
 
@@ -316,7 +314,7 @@ void Client::LaunchDisplay() {
         cerr << "CreateProcessA - failed" << endl;
 
     }
-}
+}*/
 
 void Client::ClientToServer() {
     cout << "You have successfully entered the chat room." << endl;
@@ -339,7 +337,6 @@ void Client::ClientToServer() {
             message.content = input;
 
             SendMsg(m_chatConn, &message);
-            SendMsg(m_displayConn, &message);
 
             cout << endl;
         }
@@ -354,7 +351,11 @@ void Client::ServerToDisplay() {
 
     while (true) {
         message = ReceiveMsg(m_chatConn);
-        SendMsg(m_displayConn, &message);
+        cout << "username: " << message.username << endl;
+        cout << "message type: " << message.type << endl;
+        cout << "message length: " << message.length << endl;
+        cout << "message: " << message.content << endl;
+        //SendMsg(m_displayConn, &message);
     }
 }
 
