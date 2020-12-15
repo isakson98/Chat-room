@@ -114,12 +114,15 @@ void Server::Get_user_and_pass() {
 	ifstream infile("Username_Password.txt");
 
 	if (infile.is_open()) {
+	    cout << "file is open" << endl;
 		string file_username;
 		string file_password;
 
 		while (infile >> file_username >> file_password) {
 			user_pass.insert({ file_username, file_password });
 		}
+	} else{
+	    cout << "not working" << endl;
 	}
 }
 
