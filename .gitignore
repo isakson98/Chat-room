@@ -12,4 +12,7 @@ cmake*
 /.vs/
 /Client/.vs/
 /Server/.vs/
+/Client/Release/
+/Server/Release/
+/Server/Server/Release/
 
