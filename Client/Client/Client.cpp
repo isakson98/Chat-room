@@ -94,7 +94,7 @@ SOCKET Client::EstablishTCPConn(string p_host, string p_service) {
 
     if (connect(s, (struct sockaddr*)&sin, sizeof(sin)) == SOCKET_ERROR)
     {
-        cerr << "Attempt to connect to server failed: " << WSAGetLastError() << endl;
+        cerr << "Attempt to connect to server failed: " << p_service << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -117,9 +117,8 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
-
-    //LaunchDisplay();
+    LaunchDisplay();
+    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 }
 
 void Client::AskForCredentials() {
@@ -272,8 +271,6 @@ void Client::ConvertToMsg(Message* p_message) {
     count += length.size();
 
     strncpy(&p_message->message[count], p_message->content.c_str(), p_message->content.size());
-
-    cout << endl;
 }
 
 Client::Message Client::ParseMsg(char* p_header, char* p_message, int p_length) {
@@ -338,7 +335,9 @@ void Client::ClientToServer() {
         if (input.size() > 0 && input.size() <= 280) {
             message.length = input.size();
             message.content = input;
+
             SendMsg(m_chatConn, &message);
+
             cout << endl;
         }
         else {
@@ -352,6 +351,10 @@ void Client::ServerToDisplay() {
 
     while (true) {
         message = ReceiveMsg(m_chatConn);
+        cout << "username: " << message.username << endl;
+        cout << "message type: " << message.type << endl;
+        cout << "message length: " << message.length << endl;
+        cout << "message: " << message.content << endl;
         SendMsg(m_displayConn, &message);
     }
 }
