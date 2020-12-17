@@ -1,10 +1,4 @@
 
-// data_type
-//AUTHENTICATE - 0
-//MESSAGE - 1
-//CONFIRM - 2
-//DENY AUTHENTICATION- 3
-
 #include "stdafx.h"
 
 #include "Server.h"
@@ -22,12 +16,16 @@ Server::~Server() {
 }
 
 /*
-Name: InitServer(), called by user
+NAME 
+Server::InitServer(), called by user
 
-Purpose:
+DESCRIPTION
 Does initial error checking before activating the server,
 Activates the listening socket and initilazes a hash map 
 with usernames and passwords
+
+AUTHOR:
+Egor Isakson
 
 */
 void Server::InitServer() {
@@ -65,11 +63,15 @@ void Server::InitServer() {
 
 
 /*
-Name: ActivateListeningSoc()
+NAME 
+Server::ActivateListeningSoc()
 
-Purpose:
+DESCRIPTION
 sets up the connection of listening socket
 assigns socket value to private m_all_client_socs
+
+AUTHOR:
+Egor Isakson
 
 */
 void Server::ActivateListeningSoc() {
@@ -124,10 +126,14 @@ void Server::ActivateListeningSoc() {
 }
 
 /*
-Name: Get_user_and_pass()
+NAME 
+Server::Get_user_and_pass()
 
-Purpose:
+DESCRIPTION
 opens the file with usernames and passwords and saves it into hash map
+
+AUTHOR:
+Egor Isakson
 
 */
 void Server::Get_user_and_pass() {
@@ -145,11 +151,15 @@ void Server::Get_user_and_pass() {
 
 
 /*
-Name: AcceptNewClient()
+NAME 
+Server::AcceptNewClient()
 
-Purpose:
+DESCRIPTION
 Accepts new client by creating a new socket and places it accordingly
 in the vector of all sockets and a vector of all clients
+
+AUTHOR:
+Egor Isakson
 
 */
 int Server::AcceptNewClient() {
@@ -207,12 +217,16 @@ int Server::AcceptNewClient() {
 
 
 /*
-Name: InteractWclients(), called by user
+NAME 
+Server::InteractWclients(), called by user
 
-Purpose: main function that is responsible 
+DESCRIPTION main function that is responsible 
 for receiving and sending all data to clients
 
 iterates over all clients and interacts of their socket is set.
+
+AUTHOR:
+Egor Isakson
 
 */
 void Server::InteractWclients() {
@@ -228,8 +242,7 @@ void Server::InteractWclients() {
 
 	for (unsigned int client_num = 0; client_num < allClientData.size(); client_num++) {
 		//if not set, this socket has no data currently incoming
-		// index [client_num + 1] because m_all_sockets also includes listening socket
-		if (!FD_ISSET(allClientData[client_num].csoc, &readmap)) { //m_all_sockets[client_num+1]
+		if (!FD_ISSET(allClientData[client_num].csoc, &readmap)) { 
 			continue;
 		}
 		ReceiveMsg(client_num);
@@ -240,10 +253,14 @@ void Server::InteractWclients() {
 
 
 /*
-Name: Check_READMAP()
+NAME 
+Server::Check_READMAP()
 
-Purpose: checks if any sockets have any 
+DESCRIPTION checks if any sockets have any 
 impending messages
+
+AUTHOR:
+Egor Isakson
 
 */
 int Server::Check_READMAP() {
@@ -266,10 +283,14 @@ int Server::Check_READMAP() {
 
 
 /*
-Name: ReceiveMsg()
+NAME 
+Server::ReceiveMsg()
 
-Purpose: used to receive messages, regardless
+DESCRIPTION used to receive messages, regardless
 whether it is authentication or messages
+
+AUTHOR:
+Egor Isakson
 
 */
 bool Server::ReceiveMsg(int client_count) {
@@ -321,11 +342,15 @@ bool Server::ReceiveMsg(int client_count) {
 }
 
 /*
-Name: VerifyLogin()
+NAME 
+Server::VerifyLogin()
 
-Purpose: checks whether received password messages that which is in the hash map
+DESCRIPTION checks whether received password messages that which is in the hash map
 after the client is set to be verified, all his content afterwards 
 is treated as message
+
+AUTHOR:
+Egor Isakson
 
 */
 bool Server::VerifyLogin(int client_count) {
@@ -349,10 +374,14 @@ bool Server::VerifyLogin(int client_count) {
 
 
 /*
-Name: SendMsg()
+NAME 
+Server::SendMsg()
 
-Purpose: sends messages to either one client or all, 
+DESCRIPTION sends messages to either one client or all, 
 depending on whether 
+
+AUTHOR:
+Egor Isakson
 
 */
 void Server::SendMsg(int client_count) {
@@ -391,10 +420,14 @@ void Server::SendMsg(int client_count) {
 
 
 /*
-Name: Disconnect()
+NAME 
+Server::Disconnect()
 
-Purpose: performs clean disconnect of the client,
+DESCRIPTION performs clean disconnect of the client,
 resetting all buffers, sockets, and array position
+
+AUTHOR:
+Egor Isakson
 
 */
 void Server::Disconnect(int client_count) {
