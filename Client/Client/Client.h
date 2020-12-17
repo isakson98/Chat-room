@@ -5,7 +5,6 @@
 #define MESSAGE_RECIEVE 1
 #define MESSAGE_CONFIRM 2
 #define MESSAGE_DENY 3
-#define MESSAGE_ERROR 4
 #define MESSAGE_HEADER 21
 #define MESSAGE_LENGTH 280
 
@@ -37,12 +36,8 @@ protected:
 	};
 
 	void InIt();
-	void SendMsg(SOCKET p_conn, Message* p_message);
-	Message ReceiveMsg(SOCKET p_conn);
-	void ConvertToMsg(Message* p_message);
+	Message ReceiveMsg();
 	Message ParseMsg(char* p_header, char* p_message, int p_length);
-
-    SOCKET EstablishTCPConn(string p_host, string p_service);
 
 	string m_username;
 	string m_password;
@@ -52,8 +47,11 @@ protected:
 
 private:
 	string AskForIP();
+	SOCKET EstablishTCPConn(string p_host, string p_service);
 	void AskForCredentials();
 	bool Authenticate(string p_username, string p_password);
+	void SendMsg(SOCKET p_conn, Message* p_message);
+	void ConvertToMsg(Message* p_message);
 	void LaunchDisplay();
 
 	SOCKET m_chatConn;
