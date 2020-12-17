@@ -120,7 +120,6 @@ void Server::Get_user_and_pass() {
 		while (infile >> file_username >> file_password) {
 			user_pass.insert({ file_username, file_password });
 		}
-	}
 }
 
 int Server::AcceptNewClient() {
