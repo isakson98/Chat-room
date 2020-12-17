@@ -15,4 +15,6 @@ cmake*
 /Client/Release/
 /Server/Release/
 /Server/Server/Release/
-
+Client/Client/DisplayChat/.vs/
+/Client/Client/DisplayChat/Debug/
+/Client/Client/DisplayChat/DisplayChat/
