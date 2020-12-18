@@ -346,16 +346,16 @@ Client::Message Client::ReceiveMsg(SOCKET p_conn) {
 
     // Bytes are continously received until the entire message header is obtained
     while (tnb < MESSAGE_HEADER) {
-        nb = recv(m_chatConn, &headerbuff[tnb], MESSAGE_HEADER - tnb, 0);
+        nb = recv(p_conn, &headerbuff[tnb], MESSAGE_HEADER - tnb, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
-            closesocket(m_chatConn);
+            closesocket(p_conn);
             exit(EXIT_FAILURE);
         }
         else if (nb == SOCKET_ERROR) {
             cerr << "Recv returned an error with error code: " << WSAGetLastError() << endl;
-            closesocket(m_chatConn);
+            closesocket(p_conn);
             exit(EXIT_FAILURE);
         }
 
@@ -375,16 +375,16 @@ Client::Message Client::ReceiveMsg(SOCKET p_conn) {
 
     // Bytes are continously received until the entire message is obtained
     while (tnb < length) {
-        nb = recv(m_chatConn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
+        nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
-            closesocket(m_chatConn);
+            closesocket(p_conn);
             exit(EXIT_FAILURE);
         }
         else if (nb == SOCKET_ERROR) {
             cerr << "Recv returned an error with error code: " << WSAGetLastError() << endl;
-            closesocket(m_chatConn);
+            closesocket(p_conn);
             exit(EXIT_FAILURE);
         }
 
