@@ -1,11 +1,4 @@
 
-// data_type
-//AUTHENTICATE - 0
-//MESSAGE - 1
-//CONFIRM - 2
-//DENY - 3
-//ERROR - 4
-
 #include "stdafx.h"
 
 #include "Server.h"
@@ -16,13 +9,25 @@ Server::Server() {
 
 Server::~Server() {
 	cout << "Performing cleanup" << endl;
-
-
+	Sleep(1000);
+	WSACleanup();
 	cout << "Exiting server application " << endl;
 	cout << "Good-bye!" << endl;
 }
 
-// activated by user
+/*
+NAME 
+Server::InitServer(), called by user
+
+DESCRIPTION
+Does initial error checking before activating the server,
+Activates the listening socket and initilazes a hash map 
+with usernames and passwords
+
+AUTHOR:
+Egor Isakson
+
+*/
 void Server::InitServer() {
 
 	m_BIG_SOC = -2;
@@ -56,9 +61,19 @@ void Server::InitServer() {
 	cout << endl;
 }
 
-// activated by user (?)
-// sets up the connection of listening socket
-// assigns socket value to private m_all_client_socs
+
+/*
+NAME 
+Server::ActivateListeningSoc()
+
+DESCRIPTION
+sets up the connection of listening socket
+assigns socket value to private m_all_client_socs
+
+AUTHOR:
+Egor Isakson
+
+*/
 void Server::ActivateListeningSoc() {
 
 	cout << "Allocating listening socket" << endl;
@@ -110,6 +125,17 @@ void Server::ActivateListeningSoc() {
 
 }
 
+/*
+NAME 
+Server::Get_user_and_pass()
+
+DESCRIPTION
+opens the file with usernames and passwords and saves it into hash map
+
+AUTHOR:
+Egor Isakson
+
+*/
 void Server::Get_user_and_pass() {
 	ifstream infile("Username_Password.txt");
 
@@ -123,9 +149,22 @@ void Server::Get_user_and_pass() {
 	}
 }
 
+
+/*
+NAME 
+Server::AcceptNewClient()
+
+DESCRIPTION
+Accepts new client by creating a new socket and places it accordingly
+in the vector of all sockets and a vector of all clients
+
+AUTHOR:
+Egor Isakson
+
+*/
 int Server::AcceptNewClient() {
 	
-	cout << "Waiting for new clients" << endl;
+	cout << "Waiting for new messages" << endl;
 	
 	// check if there is an impending connection
 	if (Check_READMAP() < 0) {
@@ -148,10 +187,7 @@ int Server::AcceptNewClient() {
 		return -1;
 	}
 
-	if (m_BIG_SOC < newsock) {
-		m_BIG_SOC = newsock;
-	}
-	// m_BIG_SOC = (m_BIG_SOC > newsock) ? m_BIG_SOC : newsock;
+	m_BIG_SOC = m_BIG_SOC > newsock ? m_BIG_SOC : newsock;
 
 	//insert into vector of client content
 	for (int isoc = 0; isoc < (int)allClientData.size(); isoc++)
@@ -163,7 +199,6 @@ int Server::AcceptNewClient() {
 			m_all_sockets[isoc + 1] = newsock;
 			allClientData[isoc].csoc = newsock;
 			allClientData[isoc].message_length = 0;
-			allClientData[isoc].data_type = 0;
 			allClientData[isoc].nbHeaderData = 0;
 			allClientData[isoc].nbData = 0;
 			return isoc;   // return index where it was at.
@@ -180,11 +215,20 @@ int Server::AcceptNewClient() {
 	return allClientData.size() - 1;
 }
 
-// there is a private vector of structs
-// one struct variable per client
-// each struct has all data about the client
-// client_count is for threads to know at which index
-// is their particular client
+
+/*
+NAME 
+Server::InteractWclients(), called by user
+
+DESCRIPTION main function that is responsible 
+for receiving and sending all data to clients
+
+iterates over all clients and interacts of their socket is set.
+
+AUTHOR:
+Egor Isakson
+
+*/
 void Server::InteractWclients() {
 
 	if (Check_READMAP() < 0) {
@@ -198,8 +242,7 @@ void Server::InteractWclients() {
 
 	for (unsigned int client_num = 0; client_num < allClientData.size(); client_num++) {
 		//if not set, this socket has no data currently incoming
-		// index [client_num + 1] because m_all_sockets also includes listening socket
-		if (!FD_ISSET(allClientData[client_num].csoc, &readmap)) { //m_all_sockets[client_num+1]
+		if (!FD_ISSET(allClientData[client_num].csoc, &readmap)) { 
 			continue;
 		}
 		ReceiveMsg(client_num);
@@ -208,6 +251,18 @@ void Server::InteractWclients() {
 
 }
 
+
+/*
+NAME 
+Server::Check_READMAP()
+
+DESCRIPTION checks if any sockets have any 
+impending messages
+
+AUTHOR:
+Egor Isakson
+
+*/
 int Server::Check_READMAP() {
 	// check if there is an impending connection
 	FD_ZERO(&readmap);
@@ -226,6 +281,18 @@ int Server::Check_READMAP() {
 	return 0;
 }
 
+
+/*
+NAME 
+Server::ReceiveMsg()
+
+DESCRIPTION used to receive messages, regardless
+whether it is authentication or messages
+
+AUTHOR:
+Egor Isakson
+
+*/
 bool Server::ReceiveMsg(int client_count) {
 	Client_content &cd = allClientData[client_count];
 
@@ -244,7 +311,6 @@ bool Server::ReceiveMsg(int client_count) {
 		if (cd.nbHeaderData == cd.HEADER_LENGTH)
 		{
 			cd.username_buff_str = cd.hbuff;
-			cd.data_type = int(cd.hbuff[17]) - 48;
 			char temp[3];
 			memmove(temp, &cd.hbuff[18], 3);
 			cd.message_length = atoi(temp);
@@ -267,6 +333,7 @@ bool Server::ReceiveMsg(int client_count) {
 	cd.message_str = cd.message;
 	cd.message_str = cd.message_str.substr(0, cd.message_length);
 
+	// if client is not verified, he must confirm his password first
 	if (cd.verified == 0) {
 		VerifyLogin(client_count);
 	}
@@ -274,39 +341,60 @@ bool Server::ReceiveMsg(int client_count) {
 	return true;
 }
 
-// login error checking:
-// 1) name too long, type is not allowed, 
+/*
+NAME 
+Server::VerifyLogin()
+
+DESCRIPTION checks whether received password messages that which is in the hash map
+after the client is set to be verified, all his content afterwards 
+is treated as message
+
+AUTHOR:
+Egor Isakson
+
+*/
 bool Server::VerifyLogin(int client_count) {
 
 	Client_content &cd = allClientData[client_count];
 
-	// setting client to false and cd.data_type to declining authorization
+	// setting client to false and cd.hbuff[17] to declining authorization
 	bool ClientExists = false;
-	cd.hbuff[17] = '3';
+	cd.hbuff[17] = '3'; //setting message_id status
 
 	if (user_pass.find(cd.username_buff_str) != user_pass.end()) {
 		if (user_pass[cd.username_buff_str] == cd.message_str) {
 			ClientExists = true;
 			cd.verified = 1;
-			cd.data_type = 2;
-			cd.hbuff[17] = '2';
+			cd.hbuff[17] = '2'; //setting message_id status
 		}
 	}
 
 	return ClientExists;
 }
 
+
+/*
+NAME 
+Server::SendMsg()
+
+DESCRIPTION sends messages to either one client or all, 
+depending on whether 
+
+AUTHOR:
+Egor Isakson
+
+*/
 void Server::SendMsg(int client_count) {
 
 	Client_content &cd = allClientData[client_count];
 
+	// if clean up was performed on the ticker, it will 
 	if (cd.csoc == 0) {
 		return;
 	}
 
-	//send everyone
-
-	if (cd.data_type == 1) {
+	//send to everyone
+	if (cd.hbuff[17] == '1') {
 		for (unsigned int i = 0; i < allClientData.size(); ++i) {
 			Client_content &client = allClientData[i];
 			send(client.csoc, cd.hbuff, cd.HEADER_LENGTH, 0);
@@ -330,13 +418,25 @@ void Server::SendMsg(int client_count) {
 
 }
 
+
+/*
+NAME 
+Server::Disconnect()
+
+DESCRIPTION performs clean disconnect of the client,
+resetting all buffers, sockets, and array position
+
+AUTHOR:
+Egor Isakson
+
+*/
 void Server::Disconnect(int client_count) {
 	Client_content &cd = allClientData[client_count];
 	FD_CLR(cd.csoc, &readmap);
 	cd.csoc = 0;
-	m_all_sockets[client_count + 1] = 0;
 	cd.verified = 0;
-	cd.username_buff_str = "";
+	m_all_sockets[client_count + 1] = 0;
 	memset(cd.message, 0, cd.message_length);
+	cd.username_buff_str = "";
 	cd.message_str = "";
 }

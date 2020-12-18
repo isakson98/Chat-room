@@ -14,9 +14,7 @@ int main() {
 
 	while (true) {
 		int client_pos = singleton.AcceptNewClient();
-		if (client_pos < 0) {
-			return 1;
-		}
+		if (client_pos < 0) return 1;
 		singleton.InteractWclients();
 	}
 }
