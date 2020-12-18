@@ -46,8 +46,8 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    //LaunchDisplay();
-    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
+    LaunchDisplay();
+    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 }
 
 /*
@@ -490,14 +490,21 @@ void Client::LaunchDisplay() {
 
     // Note that we are creating a new console window.
 
-    if (!CreateProcess("C:\\Users\\Sal\\CLionProjects\\Chat-room\\cmake-build-debug\\DisplayChat.exe",
+
+    if (CreateProcess("..//Client//Client//DisplayChat//Debug//DisplayChat.exe",
                        NULL, NULL, NULL, false, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi) )
 
     {
 
-        cerr << "CreateProcessA - failed" << endl;
+        cout << "DisplayChat opened up in debug" << endl;
 
     }
+	if (CreateProcess("..//Client//Client//DisplayChat//Release//DisplayChat.exe",
+		NULL, NULL, NULL, false, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi))
+
+	{
+		cout << "DisplayChat opened up in release" << endl;
+	}
 }
 
 /*
@@ -561,7 +568,7 @@ void Client::ServerToDisplay() {
 
     while (true) {
         message = ReceiveMsg(m_chatConn);
-        //SendMsg(m_displayConn, &message);
+        SendMsg(m_displayConn, &message);
     }
 }
 
