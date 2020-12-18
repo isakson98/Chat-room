@@ -46,8 +46,8 @@ void Client::StartUp() {
         AskForCredentials();
     } while (Authenticate(m_username, m_password) == false);
 
-    LaunchDisplay();
-    m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
+    //LaunchDisplay();
+    //m_displayConn = EstablishTCPConn("127.0.0.1", m_displayService);
 }
 
 /*
@@ -279,7 +279,7 @@ bool Client::Authenticate(string p_username, string p_password) {
 
     SendMsg(m_chatConn, &login);
 
-    login = ReceiveMsg();
+    login = ReceiveMsg(m_chatConn);
 
     if (login.type == MESSAGE_CONFIRM) {
         return true;
@@ -335,7 +335,7 @@ RETURNS
 AUTHOR
         Milos Miladinov
 */
-Client::Message Client::ReceiveMsg() {
+Client::Message Client::ReceiveMsg(SOCKET p_conn) {
     Message message;
     char headerbuff[MESSAGE_HEADER];
     char messagebuff[MESSAGE_LENGTH];
@@ -560,8 +560,8 @@ void Client::ServerToDisplay() {
     Message message;
 
     while (true) {
-        message = ReceiveMsg();
-        SendMsg(m_displayConn, &message);
+        message = ReceiveMsg(m_chatConn);
+        //SendMsg(m_displayConn, &message);
     }
 }
 

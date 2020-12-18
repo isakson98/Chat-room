@@ -36,7 +36,7 @@ protected:
 	};
 
 	void InIt();
-	Message ReceiveMsg();
+	Message ReceiveMsg(SOCKET p_conn);
 	Message ParseMsg(char* p_header, char* p_message, int p_length);
 
 	string m_username;
