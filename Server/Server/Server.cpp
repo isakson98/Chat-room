@@ -97,7 +97,7 @@ void Server::ActivateListeningSoc() {
 		cerr << "Bad Port number/service specified: " << m_service << endl;;
 		exit(1);
 	}
-	/* Allocate a socket. */
+	/* Allocate a socket. */	
 	if ((m_listening_soc = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
 		int errorcode = WSAGetLastError();
