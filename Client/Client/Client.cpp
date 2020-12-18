@@ -323,6 +323,8 @@ NAME
         Client::ReceiveMsg - Receives a message from a server
 SYNOPSIS
         Client::Message Client::ReceiveMsg();
+
+        p_conn -> The socket connection to a server
 DESCRIPTION
         This function recieves messages from the chatroom server in two parts. The first loop
         extracts the header data, including the message length. The second loop uses the message
@@ -375,7 +377,7 @@ Client::Message Client::ReceiveMsg(SOCKET p_conn) {
 
     // Bytes are continously received until the entire message is obtained
     while (tnb < length) {
-        nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH, 0);
+        nb = recv(p_conn, &messagebuff[tnb], MESSAGE_LENGTH - tnb, 0);
 
         if (nb == 0) {
             cerr << "Server has closed it's connection" << endl;
